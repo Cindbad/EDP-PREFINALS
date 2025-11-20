@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="EDP PREFINALS/css/signup.css">
+</head>
+<body>
+
+  <div class="container-box">
+    <div class="right">
+      <h2>Sign up now</h2>
+
+      <form action="/EDP PREFINALS/php/signup.php" method="POST">
+
+        <label>Full Name</label>
+        <input type="text" name="fullname" placeholder="Enter your full name" required>
+
+        <label>Username</label>
+        <input type="text" name="username" placeholder="Enter username" required>
+
+        <label>Email</label>
+        <input type="email" name="email" placeholder="Enter email address" required>
+
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+
+        <label>Confirm Password</label>
+        <input type="password" name="confirm_password" placeholder="Re-enter password" required>
+
+        <button type="submit" class="btn-custom" name="signup">Create Account</button>
+
+      </form>
+
+      <p class="small">Already have an account? <a href="login.html">Log in</a></p>
+
+    </div>
+  </div>
+
+</body>
+</html>
