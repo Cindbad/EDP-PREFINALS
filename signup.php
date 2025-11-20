@@ -1,6 +1,8 @@
 <?php
 session_start();
-include 'config.php';
+include 'config.php'; // your database connection file
+
+$success = ''; // message to show after registration
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $fullname = $_POST['fullname'];
@@ -10,22 +12,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $gender = $_POST['gender'];
     $city = $_POST['city'];
 
+    // Check if passwords match
     if ($password !== $confirm_password) {
         $error = "Passwords do not match!";
     } else {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $hashed_confirm_password = password_hash($confirm_password, PASSWORD_DEFAULT);
 
-        $stmt = $conn->prepare("INSERT INTO users (fullname, email, password, confirm_password, gender, city) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssss", $fullname, $email, $hashed_password, $hashed_confirm_password, $gender, $city);
-
-        if ($stmt->execute()) {
-            $_SESSION['success'] = "Registration successful. Please login.";
-            header("Location: login.php");
+        // Check if email already exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
+        if ($stmt->num_rows > 0) {
+            $error = "Email already registered!";
         } else {
-            $error = "Email already exists!";
+            $stmt->close();
+            // Insert new user
+            $stmt = $conn->prepare("INSERT INTO users (fullname, email, password, gender, city, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+            $stmt->bind_param("sssss", $fullname, $email, $hashed_password, $gender, $city);
+            if ($stmt->execute()) {
+                $success = "Account registered successfully!";
+            } else {
+                $error = "Database error: " . $stmt->error;
+            }
         }
-        $stmt->close();
     }
 }
 ?>
@@ -41,7 +51,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100vh;
-  background: url("https://static.vecteezy.com/system/resources/previews/007/972/775/non_2x/dark-black-and-gray-blurred-background-has-a-little-abstract-light-free-photo.jpg") no-repeat center center/cover;
+  background: #1d1f27;
   color: white;
   display: flex;
   align-items: center;
@@ -49,43 +59,64 @@ body {
   font-family: Arial, sans-serif;
 }
 .container-box {
-  width: 650px;
+  width: 600px;
   padding: 50px;
   background: rgba(0,0,0,0.65);
   border-radius: 18px;
   box-sizing: border-box;
+  box-shadow: 0 0 20px rgba(255,255,255,0.15);
 }
-.right { width: 100%; }
 .right h2 {
   text-align: center;
-  font-size: 2.6rem;
+  font-size: 2.2rem;
   font-weight: 700;
   margin-bottom: 30px;
   letter-spacing: 1px;
 }
 label {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 500;
-  margin-bottom: 5px;
-  display: block;
   margin-top: 15px;
+  display: block;
 }
-input.form-control-lg,
-select.form-control-lg {
+input.form-control-lg {
   width: 100%;
-  font-size: 1.1rem;
-  padding: 14px;
+  font-size: 1rem;
+  padding: 12px;
   margin-top: 5px;
   border: none;
   border-radius: 8px;
   outline: none;
+  background: rgba(255,255,255,0.08);
+  color: white;
   box-sizing: border-box;
+  cursor: text; /* I-beam for text inputs */
+}
+select.form-control-lg {
+  width: 100%;
+  font-size: 1rem;
+  padding: 12px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 8px;
+  outline: none;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  box-sizing: border-box;
+  cursor: pointer; /* pointer for dropdown */
+  appearance: none;
+  -webkit-appearance: none;
+  backdrop-filter: blur(2px);
 }
 input.form-control-lg:focus,
 select.form-control-lg:focus {
-  box-shadow: 0 0 10px #ffffff50;
-  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 8px #36A2EB;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+select.form-control-lg option {
+  background: #1d1f27;
   color: white;
+  padding: 10px;
 }
 .btn-custom {
   width: 100%;
@@ -95,26 +126,36 @@ select.form-control-lg:focus {
   border-radius: 12px;
   font-size: 20px;
   font-weight: 600;
-  cursor: pointer;
-  background: transparent;
-  color: #ffffffb0;
-  border: 2px solid #ffffff80;
-  transition: 0.4s ease;
+  cursor: pointer; /* pointer for button */
+  background: #36A2EB;
+  color: #fff;
+  border: none;
+  transition: 0.3s ease;
 }
 .btn-custom:hover {
-  background: #ffffff;
-  color: #000;
-  border: 2px solid #ccc;
-  box-shadow: 0 0 20px #ccc;
+  background: #2e89d4;
 }
 .right p.small {
   text-align: center;
-  margin-top: 30px;
+  margin-top: 20px;
   font-size: 1.1rem;
 }
 .right a {
-  color: #fff;
-  font-size: 1.1rem;
+  color: #36A2EB;
+  text-decoration: none;
+}
+.right a:hover {
+  text-decoration: underline;
+}
+.error-msg {
+  color: #ff6b6b;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.success-msg {
+  color: #4caf50;
+  text-align: center;
+  margin-bottom: 10px;
 }
 </style>
 </head>
@@ -122,7 +163,10 @@ select.form-control-lg:focus {
 <div class="container-box">
   <div class="right">
     <h2>Sign Up</h2>
-    <?php if(isset($error)) echo "<p style='color:red; text-align:center;'>$error</p>"; ?>
+    <?php 
+    if(isset($error)) { echo "<p class='error-msg'>$error</p>"; } 
+    if($success != '') { echo "<p class='success-msg'>$success</p>"; } 
+    ?>
     <form method="POST" action="">
       <label>Full Name</label>
       <input type="text" name="fullname" class="form-control-lg" required>
