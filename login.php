@@ -72,7 +72,7 @@ input.form-control-lg {
   border: none;
   border-radius: 8px;
   outline: none;
-  background: rgba(255,255,255,0.08); /* copied from signup */
+  background: rgba(255,255,255,0.08); 
   color: white;
   box-sizing: border-box;
   cursor: text;
